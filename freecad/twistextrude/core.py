@@ -1,0 +1,218 @@
+import math
+import FreeCAD as App
+import Part
+import Draft
+
+from freecad.twistextrude.utils import get_active_body, build_additive_loft, with_undo
+
+def get_twist_t(t, twist_easing):
+    """Calculates the eased value of 't' for the twist angle."""
+    if twist_easing == "Ease In (Quad)":
+        return t * t
+    elif twist_easing == "Ease Out (Quad)":
+        return 1.0 - (1.0 - t) * (1.0 - t)
+    elif twist_easing == "Ease In-Out (Smoothstep)":
+        return t * t * (3.0 - 2.0 * t)
+    elif twist_easing == "Ease In-Out (Sine)":
+        return 0.5 * (1.0 - math.cos(math.pi * t))
+    return t
+
+
+def calculate_twist_preview_shape(profile_obj, path_obj, total_height, total_angle, num_sections, equation_str, twist_easing, sketches_only):
+    """
+    Calculates a lightweight Part.Shape for the live preview. 
+    Does not create or mutate parametric FreeCAD objects.
+    """
+    is_path_mode = False
+    points, tangents = [], []
+
+    if path_obj and hasattr(path_obj, "Shape") and len(path_obj.Shape.Wires) > 0:
+        is_path_mode = True
+        path_wire = path_obj.Shape.Wires[0]
+        points = path_wire.discretize(Number=num_sections)
+
+        for i in range(num_sections):
+            if i == 0:
+                t_vec = points[1] - points[0]
+            elif i == num_sections - 1:
+                t_vec = points[-1] - points[-2]
+            else:
+                t_vec = points[i+1] - points[i-1]
+            t_vec.normalize()
+            tangents.append(t_vec)
+
+    if num_sections < 2: 
+        return Part.makeCompound([])
+
+    base_shape = profile_obj.Shape
+    if not base_shape.Wires:
+        return Part.makeCompound([])
+    
+    base_wire = base_shape.Wires[0].copy()
+    section_wires = []
+
+    safe_env = {
+        "math": math, "sin": math.sin, "cos": math.cos, "tan": math.tan,
+        "pi": math.pi, "e": math.e, "pow": pow, "abs": abs,
+        "sqrt": math.sqrt, "log": math.log
+    }
+
+    for i in range(num_sections):
+        t = float(i) / (num_sections - 1)
+        twist_t = get_twist_t(t, twist_easing)
+        
+        angle = twist_t * total_angle
+        z = t * total_height if not is_path_mode else 0.0
+
+        local_env = safe_env.copy()
+        local_env["t"] = t
+        local_env["z"] = z
+
+        try:
+            scale_factor = eval(equation_str, {"__builtins__": {}}, local_env)
+            scale_factor = max(0.001, float(scale_factor))
+        except Exception:
+            scale_factor = 1.0 # Gracefully degrade on syntax errors while typing
+
+        if is_path_mode:
+            point = points[i]
+            tangent = tangents[i]
+            z_vec = App.Vector(0, 0, 1)
+
+            if z_vec.dot(tangent) < -0.9999:
+                align_rot = App.Rotation(App.Vector(1, 0, 0), 180)
+            elif z_vec.dot(tangent) > 0.9999:
+                align_rot = App.Rotation(0, 0, 0)
+            else:
+                align_rot = App.Rotation(z_vec, tangent)
+
+            twist_rot = App.Rotation(App.Vector(0, 0, 1), angle)
+            final_rot = align_rot.multiply(twist_rot)
+            new_placement = App.Placement(point, final_rot)
+        else:
+            new_placement = App.Placement(App.Vector(0, 0, z), App.Rotation(App.Vector(0, 0, 1), angle))
+
+        # Apply transformation to the wire
+        mat = new_placement.Matrix
+        scale_mat = App.Matrix()
+        scale_mat.scale(scale_factor, scale_factor, scale_factor) 
+        final_mat = mat.multiply(scale_mat)
+        
+        w = base_wire.copy()
+        w = w.transformShape(final_mat)
+        section_wires.append(w)
+
+    if sketches_only:
+        return Part.makeCompound(section_wires)
+    else:
+        try:
+            solid = True if base_shape.isClosed() else False
+            return Part.makeLoft(section_wires, solid)
+        except Exception:
+            return Part.makeCompound(section_wires)
+
+
+@with_undo("Twist Extrude")
+def generate_smart_twist(profile_obj, path_obj, total_height=120.0, total_angle=360.0, num_sections=12, equation_str="1.0", twist_easing="Linear", sketches_only=False):
+    doc = App.ActiveDocument
+    if doc is None: return
+
+    is_path_mode = False
+    points, tangents = [], []
+
+    if path_obj:
+        if hasattr(path_obj, "Shape") and len(path_obj.Shape.Wires) > 0:
+            is_path_mode = True
+            path_wire = path_obj.Shape.Wires[0]
+            points = path_wire.discretize(Number=num_sections)
+
+            for i in range(num_sections):
+                if i == 0:
+                    t_vec = points[1] - points[0]
+                elif i == num_sections - 1:
+                    t_vec = points[-1] - points[-2]
+                else:
+                    t_vec = points[i+1] - points[i-1]
+                t_vec.normalize()
+                tangents.append(t_vec)
+
+    if num_sections < 2: return
+
+    safe_env = {
+        "math": math, "sin": math.sin, "cos": math.cos, "tan": math.tan,
+        "pi": math.pi, "e": math.e, "pow": pow, "abs": abs,
+        "sqrt": math.sqrt, "log": math.log
+    }
+
+    active_body = get_active_body(profile_obj)
+    created_sketches = []
+
+    for i in range(num_sections):
+        t = float(i) / (num_sections - 1)
+        twist_t = get_twist_t(t, twist_easing)
+
+        angle = twist_t * total_angle
+        z = t * total_height if not is_path_mode else 0.0
+
+        local_env = safe_env.copy()
+        local_env["t"] = t
+        local_env["z"] = z
+
+        try:
+            scale_factor = eval(equation_str, {"__builtins__": {}}, local_env)
+        except Exception as e:
+            App.Console.PrintError(f"Math Evaluation Error at section {i+1}: {e}\n")
+            return
+
+        scale_factor = max(0.001, float(scale_factor))
+
+        new_sketch = Draft.make_clone(profile_obj)
+        mode_label = "PathSweep" if is_path_mode else "EqTwist"
+        new_sketch.Label = f"{profile_obj.Label}_{mode_label}_{i+1}"
+
+        if hasattr(new_sketch, "Scale"):
+            new_sketch.Scale = App.Vector(scale_factor, scale_factor, scale_factor) 
+
+        if is_path_mode:
+            point = points[i]
+            tangent = tangents[i]
+            z_vec = App.Vector(0, 0, 1)
+
+            if z_vec.dot(tangent) < -0.9999:
+                align_rot = App.Rotation(App.Vector(1, 0, 0), 180)
+            elif z_vec.dot(tangent) > 0.9999:
+                align_rot = App.Rotation(0, 0, 0)
+            else:
+                align_rot = App.Rotation(z_vec, tangent)
+
+            twist_rot = App.Rotation(App.Vector(0, 0, 1), angle)
+            final_rot = align_rot.multiply(twist_rot)
+            new_placement = App.Placement(point, final_rot)
+        else:
+            new_placement = App.Placement(App.Vector(0, 0, z), App.Rotation(App.Vector(0, 0, 1), angle))
+
+        if hasattr(new_sketch, "MapMode") and new_sketch.MapMode != 'Deactivated':
+            new_sketch.AttachmentOffset = new_placement
+        else:
+            new_sketch.Placement = new_placement
+
+        if active_body:
+            active_body.addObject(new_sketch)
+        created_sketches.append(new_sketch)
+
+    if not sketches_only:
+        loft_label = f"SmartLoft_{profile_obj.Label}"
+        objects_to_hide = created_sketches + [profile_obj]
+        if is_path_mode and path_obj:
+            objects_to_hide.append(path_obj)
+
+        build_additive_loft(
+            active_body, loft_label, created_sketches[0], created_sketches[1:], objects_to_hide
+        )
+
+        mode_text = "Path Sweep" if is_path_mode else "Straight Extrude"
+        App.Console.PrintMessage(f"Successfully generated {mode_text} Loft!\n")
+    else:
+        App.Console.PrintMessage(f"Successfully generated {num_sections} sketch layers (Loft skipped).\n")
+
+    doc.recompute()
