@@ -6,6 +6,7 @@ try:
 except ImportError:
     from PySide2 import QtCore, QtWidgets
 
+
 class BaseTaskPanel:
     """
     A reusable base class for FreeCAD Task Panels.
@@ -14,7 +15,6 @@ class BaseTaskPanel:
     def __init__(self, ui_file_path, has_preview=True):
         self.form = Gui.PySideUic.loadUi(ui_file_path)
         self.has_preview = has_preview
-        self.preview_obj = None
 
         if self.has_preview:
             self.preview_timer = QtCore.QTimer()
@@ -22,6 +22,7 @@ class BaseTaskPanel:
             self.preview_timer.setInterval(150)
             self.preview_timer.timeout.connect(self._trigger_preview)
 
+            App.ActiveDocument.openTransaction("Preview Transaction")
             self.preview_obj = App.ActiveDocument.addObject("Part::Feature", "PreviewObject")
 
         self.setup_ui()
@@ -44,7 +45,7 @@ class BaseTaskPanel:
             shape = self.calculate_preview()
             if shape and not shape.isNull() and self.preview_obj:
                 self.preview_obj.Shape = shape
-                App.ActiveDocument.recompute()
+                self.preview_obj.recompute()
         except Exception as e:
             App.Console.PrintWarning(f"Preview calculation error: {e}\n")
 
@@ -59,10 +60,10 @@ class BaseTaskPanel:
                 QtWidgets.QDialogButtonBox.Cancel).value
 
     def accept(self):
-        if self.has_preview and self.preview_obj:
-            App.ActiveDocument.removeObject(self.preview_obj.Name)
+        if self.has_preview:
+            App.ActiveDocument.abortTransaction()
 
-        App.ActiveDocument.openTransaction("Apply Tool")
+        App.ActiveDocument.openTransaction("Apply Twist Extrude")
         try:
             self.generate_final()
             App.ActiveDocument.commitTransaction()
@@ -73,8 +74,7 @@ class BaseTaskPanel:
         Gui.Control.closeDialog()
 
     def reject(self):
-        if self.has_preview and self.preview_obj:
-            App.ActiveDocument.removeObject(self.preview_obj.Name)
-            App.ActiveDocument.recompute()
+        if self.has_preview:
+            App.ActiveDocument.abortTransaction()
             
         Gui.Control.closeDialog()
