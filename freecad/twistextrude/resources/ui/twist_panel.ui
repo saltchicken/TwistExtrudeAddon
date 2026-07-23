@@ -3,56 +3,33 @@
  <class>TaskPanel</class>
  <widget class="QWidget" name="TaskPanel">
   <layout class="QVBoxLayout">
-   <item><widget class="QLabel" name="instruction"><property name="text"><string>Set parameters below to generate pattern.</string></property></widget></item>
    <item>
     <layout class="QFormLayout">
-     <item row="0" column="0"><widget class="QLabel"><property name="text"><string>Pattern Shape:</string></property></widget></item>
-     <item row="0" column="1">
-      <widget class="QComboBox" name="pattern_combo">
-      </widget>
-     </item>
-     <item row="1" column="0"><widget class="QLabel"><property name="text"><string>Mapping:</string></property></widget></item>
-     <item row="1" column="1">
-      <widget class="QComboBox" name="mapping_combo">
-      </widget>
-     </item>
-     <item row="2" column="0"><widget class="QLabel"><property name="text"><string>Axis:</string></property></widget></item>
+     <item row="0" column="0"><widget class="QLabel"><property name="text"><string>Total Height (mm):</string></property></widget></item>
+     <item row="0" column="1"><widget class="QDoubleSpinBox" name="height_spin"><property name="maximum"><double>10000.0</double></property><property name="value"><double>100.0</double></property></widget></item>
+     <item row="1" column="0"><widget class="QLabel"><property name="text"><string>Total Twist Angle (°):</string></property></widget></item>
+     <item row="1" column="1"><widget class="QDoubleSpinBox" name="angle_spin"><property name="minimum"><double>-3600.0</double></property><property name="maximum"><double>3600.0</double></property><property name="value"><double>360.0</double></property></widget></item>
+     <item row="2" column="0"><widget class="QLabel"><property name="text"><string>Twist Easing:</string></property></widget></item>
      <item row="2" column="1">
-      <widget class="QComboBox" name="axis_combo">
-       <item><property name="text"><string>Z</string></property></item>
-       <item><property name="text"><string>X</string></property></item>
-       <item><property name="text"><string>Y</string></property></item>
+      <widget class="QComboBox" name="easing_combo">
+       <item><property name="text"><string>Linear</string></property></item>
+       <item><property name="text"><string>Ease In (Quad)</string></property></item>
+       <item><property name="text"><string>Ease Out (Quad)</string></property></item>
+       <item><property name="text"><string>Ease In-Out (Smoothstep)</string></property></item>
+       <item><property name="text"><string>Ease In-Out (Sine)</string></property></item>
       </widget>
      </item>
-     <item row="3" column="0"><widget class="QLabel"><property name="text"><string>Tile Radius (mm):</string></property></widget></item>
-     <item row="3" column="1"><widget class="QDoubleSpinBox" name="radius_spin"><property name="value"><double>8.0</double></property></widget></item>
-     <item row="4" column="0"><widget class="QLabel"><property name="text"><string>Gap Size (mm):</string></property></widget></item>
-     <item row="4" column="1"><widget class="QDoubleSpinBox" name="gap_spin"><property name="value"><double>1.0</double></property></widget></item>
-     <item row="5" column="0"><widget class="QLabel"><property name="text"><string>Extrude Depth (mm):</string></property></widget></item>
-     <item row="5" column="1"><widget class="QDoubleSpinBox" name="depth_spin"><property name="value"><double>5.0</double></property></widget></item>
-     <item row="6" column="0"><widget class="QLabel"><property name="text"><string>Corner Fillet (mm):</string></property></widget></item>
-     <item row="6" column="1"><widget class="QDoubleSpinBox" name="fillet_spin"><property name="value"><double>0.0</double></property></widget></item>
-     <item row="7" column="0"><widget class="QLabel"><property name="text"><string>Border Margin (mm):</string></property></widget></item>
-     <item row="7" column="1"><widget class="QDoubleSpinBox" name="border_spin"><property name="value"><double>0.0</double></property></widget></item>
-     <item row="8" column="0"><widget class="QLabel"><property name="text"><string>Min Visibility (%):</string></property></widget></item>
-     <item row="8" column="1"><widget class="QDoubleSpinBox" name="threshold_spin"><property name="value"><double>0.0</double></property></widget></item>
-     <item row="9" column="0"><widget class="QLabel"><property name="text"><string>X Offset (mm):</string></property></widget></item>
-     <item row="9" column="1"><widget class="QDoubleSpinBox" name="offset_x_spin"><property name="minimum"><double>-1000.0</double></property><property name="maximum"><double>1000.0</double></property></widget></item>
-     <item row="10" column="0"><widget class="QLabel"><property name="text"><string>Y Offset (mm):</string></property></widget></item>
-     <item row="10" column="1"><widget class="QDoubleSpinBox" name="offset_y_spin"><property name="minimum"><double>-1000.0</double></property><property name="maximum"><double>1000.0</double></property></widget></item>
-     <item row="11" column="0"><widget class="QLabel"><property name="text"><string>Operation:</string></property></widget></item>
-     <item row="11" column="1">
-      <widget class="QComboBox" name="operation_combo">
-       <item><property name="text"><string>Cut (Create Lattice)</string></property></item>
-       <item><property name="text"><string>Common (Create Panels)</string></property></item>
+     <item row="3" column="0"><widget class="QLabel"><property name="text"><string>Number of Sections:</string></property></widget></item>
+     <item row="3" column="1"><widget class="QSpinBox" name="sections_spin"><property name="minimum"><number>2</number></property><property name="maximum"><number>500</number></property><property name="value"><number>24</number></property></widget></item>
+     <item row="4" column="0"><widget class="QLabel"><property name="text"><string>Scale Formula:</string></property></widget></item>
+     <item row="4" column="1">
+      <widget class="QComboBox" name="equation_input">
+       <property name="editable"><bool>true</bool></property>
+       <item><property name="text"><string>1.0 + cos(t * 2 * pi) * 0.5</string></property></item>
+       <item><property name="text"><string>1.0</string></property></item>
       </widget>
      </item>
-     <item row="12" column="0"><widget class="QLabel"><property name="text"><string>Preview Mode:</string></property></widget></item>
-     <item row="12" column="1">
-      <widget class="QCheckBox" name="preview_toggle_check">
-       <property name="text"><string>Show Final Product</string></property>
-      </widget>
-     </item>
+     <item row="5" column="1"><widget class="QCheckBox" name="sketches_only_cb"><property name="text"><string>Generate Sketches Only</string></property></widget></item>
     </layout>
    </item>
    <item><spacer><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item>
