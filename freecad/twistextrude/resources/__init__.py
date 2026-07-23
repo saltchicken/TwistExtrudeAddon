@@ -4,6 +4,7 @@ from typing import ClassVar
 
 import FreeCAD as App
 
+
 class Resources:
     """Addon TwistExtrude resource manager"""
 

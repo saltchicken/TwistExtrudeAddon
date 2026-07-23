@@ -17,21 +17,32 @@ class TwistExtrudeFeature:
 
     def setup_properties(self, obj):
         # Target Links
-        obj.addProperty("App::PropertyLink", "Profile", "TwistExtrude", "Base profile sketch")
-        obj.addProperty("App::PropertyLink", "Path", "TwistExtrude", "Sweep path (optional)")
-        
+        obj.addProperty("App::PropertyLink", "Profile", "TwistExtrude",
+                        "Base profile sketch")
+        obj.addProperty("App::PropertyLink", "Path", "TwistExtrude",
+                        "Sweep path (optional)")
+
         # Dimensions
-        obj.addProperty("App::PropertyLength", "TotalHeight", "Parameters", "Total height").TotalHeight = 100.0
-        obj.addProperty("App::PropertyAngle", "TotalAngle", "Parameters", "Total twist angle").TotalAngle = 360.0
-        
+        obj.addProperty("App::PropertyLength", "TotalHeight", "Parameters",
+                        "Total height").TotalHeight = 100.0
+        obj.addProperty("App::PropertyAngle", "TotalAngle", "Parameters",
+                        "Total twist angle").TotalAngle = 360.0
+
         # Enumerations
-        obj.addProperty("App::PropertyEnumeration", "TwistEasing", "Parameters", "Twist easing")
-        obj.TwistEasing = ["Linear", "Ease In (Quad)", "Ease Out (Quad)", "Ease In-Out (Smoothstep)", "Ease In-Out (Sine)"]
-        
+        obj.addProperty("App::PropertyEnumeration", "TwistEasing", "Parameters",
+                        "Twist easing")
+        obj.TwistEasing = [
+            "Linear", "Ease In (Quad)", "Ease Out (Quad)",
+            "Ease In-Out (Smoothstep)", "Ease In-Out (Sine)"
+        ]
+
         # Settings
-        obj.addProperty("App::PropertyInteger", "NumSections", "Parameters", "Number of sections").NumSections = 24
-        obj.addProperty("App::PropertyString", "EquationStr", "Parameters", "Scale formula").EquationStr = "1.0"
-        obj.addProperty("App::PropertyBool", "SketchesOnly", "Parameters", "Generate sketches only").SketchesOnly = False
+        obj.addProperty("App::PropertyInteger", "NumSections", "Parameters",
+                        "Number of sections").NumSections = 24
+        obj.addProperty("App::PropertyString", "EquationStr", "Parameters",
+                        "Scale formula").EquationStr = "1.0"
+        obj.addProperty("App::PropertyBool", "SketchesOnly", "Parameters",
+                        "Generate sketches only").SketchesOnly = False
 
     def execute(self, obj):
         try:
@@ -42,29 +53,28 @@ class TwistExtrudeFeature:
                 val = getattr(obj, prop_name)
                 return val.Value if hasattr(val, 'Value') else val
 
-            config = TwistConfig(
-                total_height=get_val("TotalHeight"),
-                total_angle=get_val("TotalAngle"),
-                twist_easing=obj.TwistEasing,
-                num_sections=get_val("NumSections"),
-                equation_str=obj.EquationStr,
-                sketches_only=obj.SketchesOnly
-            )
+            config = TwistConfig(total_height=get_val("TotalHeight"),
+                                 total_angle=get_val("TotalAngle"),
+                                 twist_easing=obj.TwistEasing,
+                                 num_sections=get_val("NumSections"),
+                                 equation_str=obj.EquationStr,
+                                 sketches_only=obj.SketchesOnly)
 
-            final_shape = generate_twist_shape(
-                profile_obj=obj.Profile,
-                path_obj=obj.Path,
-                config=config
-            )
+            final_shape = generate_twist_shape(profile_obj=obj.Profile,
+                                               path_obj=obj.Path,
+                                               config=config)
 
             if final_shape and not final_shape.isNull():
                 obj.Shape = final_shape
             else:
-                App.Console.PrintWarning(f"{obj.Name}: Generated shape is empty.\n")
+                App.Console.PrintWarning(
+                    f"{obj.Name}: Generated shape is empty.\n")
 
         except Exception as e:
             import traceback
-            App.Console.PrintError(f"TwistExtrude failed to execute: {e}\n{traceback.format_exc()}\n")
+            App.Console.PrintError(
+                f"TwistExtrude failed to execute: {e}\n{traceback.format_exc()}\n"
+            )
 
 
 class ViewProviderTwistExtrude:

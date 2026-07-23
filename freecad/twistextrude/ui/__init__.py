@@ -1,3 +1,3 @@
-from .task_panel import SmartTwistTaskPanel
+from .task_panel import TwistTaskPanel
 
-__all__ = ["SmartTwistTaskPanel"]
+__all__ = ["TwistTaskPanel"]

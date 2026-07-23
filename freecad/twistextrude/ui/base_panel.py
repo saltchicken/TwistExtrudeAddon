@@ -2,9 +2,11 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 try:
-    from PySide6 import QtCore, QtWidgets
+    from PySide6 import QtCore
+    from PySide6 import QtWidgets
 except ImportError:
-    from PySide2 import QtCore, QtWidgets
+    from PySide2 import QtCore
+    from PySide2 import QtWidgets
 
 
 class BaseTaskPanel:
@@ -12,6 +14,7 @@ class BaseTaskPanel:
     A reusable base class for FreeCAD Task Panels.
     Handles UI loading, debounced previews, and safe undo transactions.
     """
+
     def __init__(self, ui_file_path, has_preview=True):
         self.form = Gui.PySideUic.loadUi(ui_file_path)
         self.has_preview = has_preview
@@ -23,7 +26,8 @@ class BaseTaskPanel:
             self.preview_timer.timeout.connect(self._trigger_preview)
 
             App.ActiveDocument.openTransaction("Preview Transaction")
-            self.preview_obj = App.ActiveDocument.addObject("Part::Feature", "PreviewObject")
+            self.preview_obj = App.ActiveDocument.addObject(
+                "Part::Feature", "PreviewObject")
 
         self.setup_ui()
 
@@ -38,7 +42,8 @@ class BaseTaskPanel:
             self.preview_timer.start()
 
     def _trigger_preview(self):
-        if hasattr(self.form, "live_preview_cb") and not self.form.live_preview_cb.isChecked():
+        if hasattr(self.form, "live_preview_cb"
+                  ) and not self.form.live_preview_cb.isChecked():
             return
 
         try:
@@ -76,5 +81,5 @@ class BaseTaskPanel:
     def reject(self):
         if self.has_preview:
             App.ActiveDocument.abortTransaction()
-            
+
         Gui.Control.closeDialog()
